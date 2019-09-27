@@ -1,8 +1,12 @@
 const express = require('express')
 const app = express()
 
+// Multer
 const multer = require('multer')
 const dir = './uploads'
+
+// Sharp
+const sharp = require('sharp');
 
 const path = require('path')
 
@@ -16,11 +20,7 @@ let storage = multer.diskStorage({
 });
 
 let upload = multer({
-    storage: storage,
-    limits: {
-        fileSize: 3 * 1204 * 1204,
-        files: 1
-    }
+    storage: storage
 });
 
 message = ''
@@ -28,25 +28,18 @@ app.get('/', (req, res) => {
     res.render('index', message)
 })
 
-const imageUpload = upload.single('profile')
-app.post('/upload', function (req, res) {
-    imageUpload(req, res, function (err) {
-        if (err) {
-            message = "File Size Too Big"
-            res.render('index', {
-                message: message,
-                status: 'danger'
-            });
-        } else {
-            message: "Error! in image upload."
-            if (!req.file) {
-                console.log("No file received");
-                message = "Error! in image upload."
-                res.render('index', {
-                    message: message,
-                    status: 'danger'
-                });
-            } else {
+app.post('/upload', upload.single('profile'), async (req, res) => {
+    if (!req.file) {
+        message = "Error! in image upload."
+        res.render('index', {
+            message: message,
+            status: 'danger'
+        });
+    } else {
+        // Resize
+        sharp(req.file.path).toBuffer().then((data) => {
+            sharp(data).resize(800).toFile(req.file.path, (err, info) => {
+                // Data
                 var imageData = {
                     name: req.file.filename,
                     type: req.file.mimetype,
@@ -61,9 +54,11 @@ app.post('/upload', function (req, res) {
                         });
                     });
                 })
-            }
-        }
-    })
-});
+            })
+        }).catch((err) => {
+            console.log(err)
+        })
+    }
+})
 
 module.exports = app;

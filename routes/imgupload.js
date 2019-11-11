@@ -7,8 +7,9 @@ const multer = require('multer')
 const dir = './uploads'
 
 // Sharp
-const sharp = require('sharp');
+// const sharp = require('sharp');
 const path = require('path')
+const resizeOptimizeImages = require('resize-optimize-images');
 
 let storage = multer.diskStorage({
     destination: function (req, file, callback) {
@@ -52,7 +53,7 @@ app.post('/upload', upload.single('profile'), async (req, res) => {
     const verifyUrl = `https://google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${captchaKey}&remoteip=${req.connection.remoteAddress}`;
 
     // Make Request To VerifyURL
-    request(verifyUrl, (err, response, body) => {
+    request(verifyUrl, async (err, response, body) => {
         body = JSON.parse(body);
 
         // If Not Successful
@@ -71,27 +72,35 @@ app.post('/upload', upload.single('profile'), async (req, res) => {
                 });
             } else {
                 // Resize
-                sharp(req.file.path).toBuffer().then((data) => {
-                    sharp(data).resize(800).toFile(req.file.path, (err, info) => {
-                        // Data
-                        var imageData = {
-                            name: req.file.filename,
-                            type: req.file.mimetype,
-                            size: req.file.size
-                        }
-                        req.getConnection(function (err, con) {
-                            con.query('INSERT INTO imgFile SET ?', imageData, function (err, result) {
-                                message = "Successfully! uploaded";
-                                res.render('index', {
-                                    message: message,
-                                    status: 'success'
-                                });
-                            });
-                        })
-                    })
-                }).catch((err) => {
-                    console.log(err)
-                })
+                // sharp(req.file.path).toBuffer().then((data) => {
+                //     sharp(data).resize(800).toFile(req.file.path, (err, info) => {
+                //         // Data
+                //         var imageData = {
+                //             name: req.file.filename,
+                //             type: req.file.mimetype,
+                //             size: req.file.size
+                //         }
+                //         req.getConnection(function (err, con) {
+                //             con.query('INSERT INTO imgFile SET ?', imageData, function (err, result) {
+                //                 message = "Successfully! uploaded";
+                //                 res.render('index', {
+                //                     message: message,
+                //                     status: 'success'
+                //                 });
+                //             });
+                //         })
+                //     })
+                // }).catch((err) => {
+                //     console.log(err)
+                // })
+                const options = {
+                    images: [req.file.path, req.file.path],
+                    width: 1000,
+                    quality: 60
+                };
+
+                // Run the module.
+                await resizeOptimizeImages(options);
             }
         }
     });

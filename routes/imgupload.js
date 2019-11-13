@@ -5,10 +5,9 @@ const request = require('request');
 // Multer
 const multer = require('multer')
 const dir = './uploads'
-
-// Sharp
-// const sharp = require('sharp');
 const path = require('path')
+
+// Resize Image File Size
 const resizeOptimizeImages = require('resize-optimize-images');
 
 let storage = multer.diskStorage({

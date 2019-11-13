@@ -29,13 +29,13 @@ app.get('/', async (req, res) => {
     res.render('index', message)
 })
 
-const uploadProfile = upload.fields([{
+const uploadProfileImage = upload.fields([{
     name: 'profile',
     maxCount: 10
 }])
 
 app.post('/upload', async (req, res) => {
-    uploadProfile(req, res, (err) => {
+    uploadProfileImage(req, res, function (err) {
         if (err) {
             message = "Error! To Upload Image."
             res.render('index', {
@@ -77,42 +77,49 @@ app.post('/upload', async (req, res) => {
                         status: 'danger'
                     });
                 } else {
-                    if (!req.file) {
+                    if (!req.files) {
                         message = "Error! in image upload."
                         res.render('index', {
                             message: message,
                             status: 'danger'
                         });
                     } else {
-                        // Resize
-                        // sharp(req.file.path).toBuffer().then((data) => {
-                        //     sharp(data).resize(800).toFile(req.file.path, (err, info) => {
-                        //         // Data
-                        //         var imageData = {
-                        //             name: req.file.filename,
-                        //             type: req.file.mimetype,
-                        //             size: req.file.size
-                        //         }
-                        //         req.getConnection(function (err, con) {
-                        //             con.query('INSERT INTO imgFile SET ?', imageData, function (err, result) {
-                        //                 message = "Successfully! uploaded";
-                        //                 res.render('index', {
-                        //                     message: message,
-                        //                     status: 'success'
-                        //                 });
-                        //             });
-                        //         })
-                        //     })
-                        // }).catch((err) => {
-                        //     console.log(err)
-                        // })
+                        const propImageArray = req.files.profile;
+                        const propImagePath = propImageArray.map(x => x.path)
+                        const propImageName = propImageArray.map(x => x.filename)
+                        const propImageMimeType = propImageArray.map(x => x.mimetype)
+                        const propImageSize = propImageArray.map(x => x.size)
+                        const propImageNameJson = JSON.stringify(propImageName)
+                        const propImageMimeTypeJson = JSON.stringify(propImageMimeType)
+                        const propImageSizeJson = JSON.stringify(propImageSize)
+
                         const options = {
-                            images: [req.file.path, req.file.path],
+                            images: propImagePath,
                             width: 1000,
                             quality: 60
                         };
-                        // Run the module.
-                        await resizeOptimizeImages(options);
+
+                        var imageData = {
+                            name: propImageNameJson,
+                            type: propImageMimeTypeJson,
+                            size: propImageSizeJson
+                        }
+
+                        req.getConnection(function (err, con) {
+                            con.query('INSERT INTO imgFile SET ?', imageData, function (err, result) {
+                                if (err) {
+                                    res.redirect('/')
+                                } else {
+                                    message = "Successfully! uploaded";
+                                    res.render('index', {
+                                        message: message,
+                                        status: 'success'
+                                    });
+                                }
+                            })
+                        })
+
+                        await resizeOptimizeImages(options)
                     }
                 }
             });
